@@ -1,0 +1,15 @@
+#|-*- mode:lisp -*-|#
+(in-package :cl-user)
+(defpackage :lake.user
+  (:use :cl :lake :cl-syntax)
+  (:shadowing-import-from :lake
+						  :directory))
+(in-package :lake.user)
+
+(use-syntax :interpol)
+ ;;; here follow your tasks...
+(task "test" ()
+	  (ql:quickload '(:prove :ppcre))
+	  (load #P"my-scheme.asd")
+	  (load #P"my-scheme-test.asd")
+	  (asdf:test-system :my-scheme-test))
