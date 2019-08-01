@@ -68,11 +68,25 @@
 		(t (append (list (tree-str-remove-if (car tree) tar))
 				   (tree-str-remove-if (cdr tree) tar)))))
 
+(defun str-split-paren-in-paren (str)
+  (cond ((null str)
+		 nil)
+		((not (or (null (search "(" str)) (null (search ")" str))))
+		 (cons (subseq str (search "(" str) (1+ (- (search ")" str) (search "(" str))))
+			   (str-split-paren-in-paren (subseq str (1+ (search ")" str))))))))
+
+(defun str-parse (str)
+  (let* ((paren-content (ppcre:scan-to-strings "\\(.*\\)" str))
+		 (into-content (subseq paren-content 1 (1- (length paren-content))))
+		 (func (ppcre:scan-to-strings "^\\S+" into-content))
+		 (paren `(,(getmethod func))))
+	(str-parse (ppcre:scan-to-strings "\\(.*\\)"))))
+
 (defun str-to-parens (str)
   (cond ((string= str "") nil)
 		((null str) nil)
 		(t (case-reg-str str
-			 ("^\\(" (list "(" (str-to-parens (subseq str 1))))
+			 ("^\\(" (list "(" (str-to-parens (subseq str 1 (search ")" str)))))
 			 ("^\\)" (cons ")" (str-to-parens (subseq str 1))))
 			 ("^\\w[\\w|0-9]+" (cons (ppcre:scan-to-strings "^\\w[\\w|0-9]+" str)
 									 (str-to-parens (subseq str (length (ppcre:scan-to-strings "^\\w[\\w|0-9]+" str))))))
