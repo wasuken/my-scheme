@@ -56,25 +56,53 @@
 				cond-list)))
 	(reverse cond-list)))
 
-(defun tree-str-remove-if (tree tar)
+(defun tree-remove-if (tree tar)
   (cond ((null tree) nil)
 		((not (listp (car tree)))
-		 (if (string= (car tree) tar)
-			 (tree-str-remove-if (cdr tree) tar)
+		 (if (eql (car tree) tar)
+			 (tree-remove-if (cdr tree) tar)
 			 (append (list (car tree))
-					 (tree-str-remove-if (cdr tree) tar))))
-		((null (car tree)) (tree-str-remove-if (cdr tree) tar))
-		((null (cdr tree)) (list (tree-str-remove-if (car tree) tar)))
-		(t (append (list (tree-str-remove-if (car tree) tar))
-				   (tree-str-remove-if (cdr tree) tar)))))
+					 (tree-remove-if (cdr tree) tar))))
+		((null (car tree)) (tree-remove-if (cdr tree) tar))
+		((null (cdr tree)) (list (tree-remove-if (car tree) tar)))
+		(t (append (list (tree-remove-if (car tree) tar))
+				   (tree-remove-if (cdr tree) tar)))))
 
-(defun str-parse-method (lst)
+(defun parser (str)
+  (let ((to-html-lst (tree-remove-if (nth 2
+										  (nth 3
+											   (closure-html:parse
+												(ppcre:regex-replace-all "\\)"
+																		 (ppcre:regex-replace-all "\\(" str "<a>")
+																		 "</a>")
+												(closure-html:make-lhtml-builder))))
+										 " ")))
+	(tree-remove-if to-html-lst :a)))
+
+(defun intepretor ())
+
+;; (defun parser-method (lst)
+;;   (mapcar #'(lambda (x)
+;; 			  (cond ((listp x)
+;; 					 (parser-method x))
+;; 					((ppcre:scan-to-strings "\\(|\\)" x)
+;; 					 x)
+;; 					((ppcre:scan-to-strings "^[0-9]+" x)
+;; 					 (parse-integer x))
+;; 					((getmethod x)
+;; 					 (getmethod x))
+;; 					(t (getvar x))))
+;; 		  lst))
+
+;; (defun parser (str)
+;;   (str-parse str))
+
+(defun lexer-method (lst)
   (let* ((formula-str (ppcre:regex-replace-all "\\s+" (string-trim '(#\Space) (format nil "~{~A ~}"
 													  (remove-if #'(lambda (x) (= (length x) 0))
 																 (mapcar #'(lambda (x) (cond ((null x) "")
-																							 ((equal :a x) "")
 																							 ((listp x)
-																							  (str-parse-method x))
+																							  (lexer-method x))
 																							 ((and (stringp x)
 																								  (string= (string-trim '(#\Space) x) ""))
 																							  "")
@@ -86,43 +114,7 @@
 		 (args (mapcar #'(lambda (x) (if (not (string= "" x)) (parse-integer x))) (cdr (ppcre:split " " formula-str)))))
 	(write-to-string (funcall-args-cons (getmethod method) args))))
 
-(defun str-parse (str)
-  (let ((to-html-lst (tree-str-remove-if (nth 2
-										  (nth 3
-											   (closure-html:parse
-												(ppcre:regex-replace-all "\\)"
-																		 (ppcre:regex-replace-all "\\(" str "<a>")
-																		 "</a>")
-												(closure-html:make-lhtml-builder))))
-										 " ")))
-	(str-parse-method to-html-lst)))
 
-(defun intepretor ())
-
-(defun parser-method (lst)
-  (mapcar #'(lambda (x)
-			  (cond ((listp x)
-					 (parser-method x))
-					((ppcre:scan-to-strings "\\(|\\)" x)
-					 x)
-					((ppcre:scan-to-strings "^[0-9]+" x)
-					 (parse-integer x))
-					((getmethod x)
-					 (getmethod x))
-					(t (getvar x))))
-		  lst))
-
-(defun parser (str)
-  (str-parse str))
-
-(defun lexer-method (parens)
-  (cond ((null (car parens)) nil)
-		((functionp (car parens))
-		 (funcall-args-cons (car parens)
-							(mapcar #'(lambda (x) (if (listp x)
-													  (lexer-method x)
-													  x))
-									(cadr parens))))))
 
 (defun lexer (str)
   (lexer-method (parser str)))
