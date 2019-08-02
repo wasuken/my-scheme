@@ -9,7 +9,7 @@
 (use-syntax :interpol)
  ;;; here follow your tasks...
 (task "test" ()
-	  (ql:quickload '(:prove :cl-ppcre))
+	  (ql:quickload '(:prove :cl-ppcre :closure-html))
 	  (load #P"my-scheme.asd")
 	  (load #P"my-scheme-test.asd")
 	  (asdf:test-system :my-scheme-test))

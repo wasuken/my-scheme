@@ -68,34 +68,34 @@
 		(t (append (list (tree-str-remove-if (car tree) tar))
 				   (tree-str-remove-if (cdr tree) tar)))))
 
-(defun str-split-paren-in-paren (str)
-  (cond ((null str)
-		 nil)
-		((not (or (null (search "(" str)) (null (search ")" str))))
-		 (cons (subseq str (search "(" str) (1+ (- (search ")" str) (search "(" str))))
-			   (str-split-paren-in-paren (subseq str (1+ (search ")" str))))))))
+(defun str-parse-method (lst)
+  (let* ((formula-str (ppcre:regex-replace-all "\\s+" (string-trim '(#\Space) (format nil "~{~A ~}"
+													  (remove-if #'(lambda (x) (= (length x) 0))
+																 (mapcar #'(lambda (x) (cond ((null x) "")
+																							 ((equal :a x) "")
+																							 ((listp x)
+																							  (str-parse-method x))
+																							 ((and (stringp x)
+																								  (string= (string-trim '(#\Space) x) ""))
+																							  "")
+																							 (t x)))
+																		 lst))))
+											   " "))
+		 (method (ppcre:scan-to-strings "^\\S+" formula-str))
+		 ;; 今は数字のみ扱う
+		 (args (mapcar #'(lambda (x) (if (not (string= "" x)) (parse-integer x))) (cdr (ppcre:split " " formula-str)))))
+	(write-to-string (funcall-args-cons (getmethod method) args))))
 
 (defun str-parse (str)
-  (let* ((paren-content (ppcre:scan-to-strings "\\(.*\\)" str))
-		 (into-content (subseq paren-content 1 (1- (length paren-content))))
-		 (func (ppcre:scan-to-strings "^\\S+" into-content))
-		 (paren `(,(getmethod func))))
-	(str-parse (ppcre:scan-to-strings "\\(.*\\)"))))
-
-(defun str-to-parens (str)
-  (cond ((string= str "") nil)
-		((null str) nil)
-		(t (case-reg-str str
-			 ("^\\(" (list "(" (str-to-parens (subseq str 1 (search ")" str)))))
-			 ("^\\)" (cons ")" (str-to-parens (subseq str 1))))
-			 ("^\\w[\\w|0-9]+" (cons (ppcre:scan-to-strings "^\\w[\\w|0-9]+" str)
-									 (str-to-parens (subseq str (length (ppcre:scan-to-strings "^\\w[\\w|0-9]+" str))))))
-			 ("^[0-9]+" (cons (ppcre:scan-to-strings "^[0-9]+" str)
-							  (str-to-parens (subseq str (length (ppcre:scan-to-strings "^[0-9]+" str))))))
-			 ("^\\s+" (str-to-parens (subseq str (length (ppcre:scan-to-strings "^\\s+" str)))))
-
-			 (t (append (list (car (ppcre:split " " str))
-							  (str-to-parens (format nil "~{~A ~}" (cdr (ppcre:split " " str)))))))))))
+  (let ((to-html-lst (tree-str-remove-if (nth 2
+										  (nth 3
+											   (closure-html:parse
+												(ppcre:regex-replace-all "\\)"
+																		 (ppcre:regex-replace-all "\\(" str "<a>")
+																		 "</a>")
+												(closure-html:make-lhtml-builder))))
+										 " ")))
+	(str-parse-method to-html-lst)))
 
 (defun intepretor ())
 
@@ -113,10 +113,7 @@
 		  lst))
 
 (defun parser (str)
-  (let ((parens (car (tree-str-remove-if
-					  (tree-str-remove-if
-					   (tree-str-remove-if (str-to-parens str) "") "(") ")"))))
-	(parser-method parens)))
+  (str-parse str))
 
 (defun lexer-method (parens)
   (cond ((null (car parens)) nil)
