@@ -19,7 +19,7 @@
 	("*" ,(function (lambda (x y) (* x y))))
 	("/" ,(function (lambda (x y) (/ x y))))
 	("def" ,(function (lambda (x y) (push `(,x ,y) *variable-alist*))))
-	("lambda"  ,(function (lambda (x y)　(lambda x y))))))
+	))
 
 (defun getvar (var)
   (cadr (find-if #'(lambda (x) (string= (car x) var)) *variable-alist*)))
@@ -61,7 +61,35 @@
 		(t (append (list (tree-remove-if (car tree) tar))
 				   (tree-remove-if (cdr tree) tar)))))
 
-(defun parser (str)
+(defun type-check (str)
+  (cond ((ppcre:scan-to-strings "^([a-z|A-Z][0-9|\\w]+|[a-z|A-Z])" str)
+		 `(:|value| ,str :|type| :|symbol|))
+		((ppcre:scan-to-strings "^[0-9]+" str)
+		 `(:|value| ,(parse-integer str) :|type| :|integer|))
+		((ppcre:scan-to-strings "\".*\"" str)
+		 `(:|value| ,str :|type| :|string|))))
+
+(defun str-to-abs-tree (str)
+  (let* ((nodes (remove-if-not #'(lambda (x) (ppcre:scan-to-strings "\\S+" x))
+							   (ppcre:split "\\s+" str)))
+		 (func (car nodes))
+		 (args (mapcar #'(lambda (x) (type-check x)) (cdr nodes))))
+	`((:|value| ,func :|type| :|method|)
+	  ,@args)))
+
+(defun tree-replace-abs-node (tree)
+  (cond ((null tree) nil)
+		((and (null (car tree)) (null (cdr tree))) nil)
+		((not (listp (car tree)))
+		 (if (not (ppcre:scan-to-strings "^\\s+$" (car tree)))
+			 (append (str-to-abs-tree (car tree))
+					 (tree-replace-abs-node (cdr tree)))
+			 (if (not (null (cdr tree)))
+				 (tree-replace-abs-node (cdr tree)))))
+		(t (cons (tree-replace-abs-node (car tree))
+				 (tree-replace-abs-node (cdr tree))))))
+
+(defun lexer (str)
   (let ((to-html-lst (tree-remove-if (nth 2
 										  (nth 3
 											   (closure-html:parse
@@ -69,37 +97,13 @@
 																		 (ppcre:regex-replace-all "\\(" str "<a>")
 																		 "</a>")
 												(closure-html:make-lhtml-builder))))
-										 " ")))
-	(tree-remove-if to-html-lst :a)))
+									 " ")))
+	(tree-replace-abs-node (tree-remove-if to-html-lst :a))))
 ;;; 未実装
 (defun intepretor ())
 
-(defun lexer-method (lst)
-  (let* ((formula-lst (remove-if #'(lambda (x) (= (length x) 0))
-						 (mapcar #'(lambda (x) (cond ((null x) "")
-													 ((listp x)
-													  (lexer-method x))
-													 ((and (stringp x)
-														   (string= (string-trim '(#\Space) x) ""))
-													  "")
-													 (t x)))
-								 lst)))
-		 (formula-str (ppcre:regex-replace-all "\\s+"
-											   (string-trim '(#\Space) (format nil "~{~A ~}"
-																			   formula-lst))
-											   " "))
-		 (method (ppcre:scan-to-strings "^\\S+" formula-str))
-		 ;; 今は数字のみ扱う
-		 (args (mapcar #'(lambda (x)
-						   (cond ((ppcre:scan-to-strings "^([a-z|A-Z][0-9|\\w]+|[a-z|A-Z])" x)
-								  (if (string= method "def")
-									  x
-									  (getvar x)))
-								 ((ppcre:scan-to-strings "^[0-9]+")
-								  (parse-integer x))))
-					   (cdr (ppcre:split " " formula-str)))))
-	(print method)
-	(write-to-string (funcall-args-cons (getvar method) args))))
+;; (defun eval-method (ast-tree)
+;;   )
 
-(defun lexer (str)
-  (lexer-method (parser str)))
+;; (defun eval (str)
+;;   (eval-method (lexer str)))
