@@ -19,7 +19,8 @@
 	(diag "second function")
 	(is result
 		'(:|value| "+" :|type| :|method| :|args|
-		  ((:|value| "*" :|type| :|method| :|args|
+		  ((:|value| 1 :|type| :|integer| :|args| NIL)
+		   (:|value| "*" :|type| :|method| :|args|
 			((:|value| 2 :|type| :|integer| :|args| NIL)
 			 (:|value| 3 :|type| :|integer| :|args| NIL))))))
 	)
@@ -35,6 +36,6 @@
 
 (subtest "Variable Test"
   (my-scheme:my-eval "(def c 10)")
-  (is (my-scheme:my-eval "(+ 1 c)") "11")
+  (is (my-scheme:my-eval "(+ 1 c)") 11)
   (my-scheme:my-eval "(def d 11)")
-  (is (my-scheme:my-eval "(+ c d)") "21"))
+  (is (my-scheme:my-eval "(+ c d)") 21))
