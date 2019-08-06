@@ -11,29 +11,30 @@
   (let ((result (my-scheme:lexer "(+ 1 2)")))
 	(diag "first function")
 	(is result
-		'((:|value| "+" :|type| :|method|)
-		  (:|value| 1 :|type| :|integer|)
-		  (:|value| 2 :|type| :|integer|)))
+		'(:|value| "+" :|type| :|method| :|args|
+		  ((:|value| 1 :|type| :|integer| :|args| NIL)
+		   (:|value| 2 :|type| :|integer| :|args| NIL))))
 	)
   (let ((result (my-scheme:lexer "(+ 1 (* 2 3)")))
 	(diag "second function")
 	(is result
-		'((:|value| "+" :|type| :|method|) (:|value| 1 :|type| :|integer|)
-		  ((:|value| "*" :|type| :|method|) (:|value| 2 :|type| :|integer|)
-		   (:|value| 3 :|type| :|integer|))))
+		'(:|value| "+" :|type| :|method| :|args|
+		  ((:|value| "*" :|type| :|method| :|args|
+			((:|value| 2 :|type| :|integer| :|args| NIL)
+			 (:|value| 3 :|type| :|integer| :|args| NIL))))))
 	)
   )
 
-;; (subtest "Testing eval"
-;;   (is (my-scheme:eval "(+ 1 2)")
-;; 	  "3")
-;;   (is (my-scheme:eval "(+ 1 (* 2 3)")
-;; 	  "7")
-;;   (is (my-scheme:eval "(+ (* 50 2) (* 25 4))")
-;; 	  "200"))
+(subtest "Testing eval"
+  (is (my-scheme:my-eval "(+ 1 2)")
+	  3)
+  (is (my-scheme:my-eval "(+ 1 (* 2 3))")
+	  7)
+  (is (my-scheme:my-eval "(+ (* 50 2) (* 25 4))")
+	  200))
 
-;; (subtest "Variable Test"
-;;   (eval "(def c 10)")
-;;   (is (eval "(+ 1 c)") "11")
-;;   (eval "(def d 11)")
-;;   (is (eval "(+ c d)") "21"))
+(subtest "Variable Test"
+  (my-scheme:my-eval "(def c 10)")
+  (is (my-scheme:my-eval "(+ 1 c)") "11")
+  (my-scheme:my-eval "(def d 11)")
+  (is (my-scheme:my-eval "(+ c d)") "21"))
