@@ -21,7 +21,7 @@
 	(eval (reverse run-lst))))
 
 (defmacro make-lambda (args body)
-  `(lambda (,args) ,(body)))
+  `(lambda (,args) ,body))
 
 (defparameter *variable-alist*
   `(("+" ,(function (lambda (x y) (+ x y))))
@@ -38,7 +38,7 @@
 (defun setvar (var contents)
   (if (getvar var)
 	  (nsubst-if `(,var ,contents) #'(lambda (x) (and (listp x) (stringp (car x)) (string= (car x) var)))
-				*variable-alist*)
+				 *variable-alist*)
 	  (push `(,var ,contents) *variable-alist*)))
 
 (defmacro case-str (x &body body)
@@ -93,19 +93,22 @@
 				   :|method|
 				   (getf (type-check (car nodes)) :|type|))))
 	`(:|value| ,func
-	   :|type| ,type :|args| ,(append (mapcar #'(lambda (x) (str-to-abs-tree x nil))
-											(cdr nodes))
+	   :|type| ,type :|args| ,(append (let ((lst (mapcar #'(lambda (x) (str-to-abs-tree x nil))
+														   (cdr nodes))))
+										(if (plistp lst)
+											(list lst)
+											lst))
 									  (tree-replace-abs-node args)))))
 
 (defun tree-replace-abs-node (tree)
-    (cond ((null tree) nil)
+  (cond ((null tree) nil)
 		((and (null (car tree)) (null (cdr tree))) nil)
 		((not (listp (car tree)))
 		 (if (not (ppcre:scan-to-strings "^\\s+$" (car tree)))
 			 (str-to-abs-tree (car tree) (cdr tree))
 			 (if (not (null (cdr tree)))
 				 (tree-replace-abs-node (cdr tree)))))
-		(t (cons (tree-replace-abs-node (car tree))
+		(t #>(cons (tree-replace-abs-node (car tree))
 				 (tree-replace-abs-node (cdr tree))))))
 
 (defun lexer (str)

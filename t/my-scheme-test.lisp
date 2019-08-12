@@ -24,6 +24,7 @@
 			((:|value| 2 :|type| :|integer| :|args| NIL)
 			 (:|value| 3 :|type| :|integer| :|args| NIL))))))
 	)
+  (let ((result (my-scheme:lexer "(quote ((10) 20 (30 40)))"))))
   )
 
 (subtest "Testing eval"

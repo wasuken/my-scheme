@@ -10,6 +10,8 @@
  ;;; here follow your tasks...
 (task "test" ()
 	  (ql:quickload '(:prove :cl-ppcre :closure-html :cl-debug-print))
+	  ;; 実際に利用するには下記が必要。slimeの利用時などに使って。
+	  ;; (cl-syntax:use-syntax cl-debug-print:debug-print-syntax)
 	  (load #P"my-scheme.asd")
 	  (load #P"my-scheme-test.asd")
 	  (asdf:test-system :my-scheme-test))
